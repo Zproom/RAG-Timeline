@@ -6,3 +6,8 @@ ipywidgets
 spacy
 torch
 sentence-transformers
+transformers
+bitsandbytes
+accelerate
+huggingface_hub
+sentencepiece
