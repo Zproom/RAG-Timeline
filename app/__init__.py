@@ -11,10 +11,12 @@ from app.utils import connect_hugging_face, get_cuda_name
 
 class App:
 
-    def __init__(self) -> None:
+    def __init__(self, log_level: int) -> None:
         """
         Main class for execution of application
         """
+        app_logger.setLevel(log_level)
+
         app_logger.debug("Starting App...")
 
         if not connect_hugging_face():
@@ -31,3 +33,15 @@ class App:
             app_logger.debug(f"Cuda device detected: {cuda_name}")
         else:
             app_logger.debug(f"Cuda not detected. Models will run on CPU (good luck).")
+
+
+    # TODO: this is where the streamlit viz logic will initiate to not premptively startup
+    def execute(self):
+        """Executes the UI and other components of the application"""
+        
+
+    # TODO
+    @staticmethod
+    def download_feed(log_level: int):
+        """Method to pull down the latest feed via the RSS Feed library"""
+        app_logger.setLevel(log_level)

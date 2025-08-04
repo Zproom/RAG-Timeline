@@ -1,3 +1,4 @@
 .ipy*
 .venv*
 .vscode
+__pycache__/
