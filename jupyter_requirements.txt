@@ -11,5 +11,3 @@ bitsandbytes
 accelerate
 huggingface_hub
 sentencepiece
-black
-isort

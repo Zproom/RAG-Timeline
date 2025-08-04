@@ -1,0 +1,10 @@
+"""
+Module to store custom exceptions for error handling
+"""
+
+from __future__ import annotations
+
+
+class InitError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

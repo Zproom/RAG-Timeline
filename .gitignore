@@ -1,1 +1,3 @@
 .ipy*
+.venv*
+.vscode
