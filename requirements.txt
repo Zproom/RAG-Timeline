@@ -1,10 +1,13 @@
+--index-url https://download.pytorch.org/whl/cu128
+torch
+
+--extra-index-url https://pypi.org/simple
 qdrant-client
 gdeltdoc
 newspaper4k
 lxml[html_clean] # required for newspaper4k
 ipywidgets
 spacy
-torch
 sentence-transformers
 transformers
 bitsandbytes
