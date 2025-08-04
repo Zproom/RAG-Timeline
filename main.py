@@ -50,6 +50,7 @@ def main(log_level: int, update: bool):
         App.download_feed(log_level)
     else:
         app = App(log_level)
+        app.execute()
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from app.exc import InitError
 from app.log import app_logger
-from app.utils import connect_hugging_face, get_cuda_name
+from app.utils import connect_hugging_face, get_cuda_name, log_cuda_mem
 
 
 class App:
@@ -34,11 +34,11 @@ class App:
         else:
             app_logger.debug(f"Cuda not detected. Models will run on CPU (good luck).")
 
+        log_cuda_mem()
 
     # TODO: this is where the streamlit viz logic will initiate to not premptively startup
     def execute(self):
         """Executes the UI and other components of the application"""
-        
 
     # TODO
     @staticmethod
