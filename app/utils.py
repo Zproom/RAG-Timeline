@@ -5,6 +5,8 @@ General purpose module for storing misc functions and utilities
 from __future__ import annotations
 
 import os
+from datetime import (  # type: ignore / using _Date only for type hinting
+    _Date, datetime)
 from typing import Any
 
 import torch
@@ -144,3 +146,11 @@ def create_llm(
     app_logger.debug(f"LLM and autotokenizer intialization complete.")
 
     return tokenizer, llm  # pyright: ignore[reportUnknownVariableType]
+
+
+def format_date(date: datetime | _Date | None) -> str:
+    """Converts date or datetime into a str"""
+    if date is None:
+        return ""
+
+    return date.strftime("%Y-%m-%d")

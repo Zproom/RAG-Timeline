@@ -2,8 +2,9 @@
 Modue for storing constants that are not expected to change
 """
 
-from typing import TypedDict
 from datetime import datetime
+from typing import TypedDict
+
 from torch import Tensor
 
 ################################################################
@@ -33,11 +34,12 @@ RERANKING_MODEL_NAME = "cross-encoder/ms-marco-TinyBERT-L-2-v2"
 MAX_NEW_TOKENS = 256
 TEMPERATURE = 0.7
 NUM_RESOURCES = 5
-CHARS_PER_TOKEN = 1 / 4 # estimated and used in lieu of a misc / 4 where needed
+CHARS_PER_TOKEN = 1 / 4  # estimated and used in lieu of a misc / 4 where needed
 
 ################################################################
 ############## Typed dict to help with type hints ##############
 ################################################################
+
 
 class ArticleDict(TypedDict):
     source: str
@@ -47,21 +49,24 @@ class ArticleDict(TypedDict):
     text: str
     url: str
 
+
 class ChunkDict(TypedDict):
     text: str
     source: str
-    date: datetime | None
+    date: str
     title: str
     authors: list[str]
     url: str
     chunk: int
     embeddings: Tensor | None
 
+
 class GdeltDict(TypedDict):
     url: str
     title: str
     domain: str
     country: str
+
 
 class QueryResDict(TypedDict):
     score: float

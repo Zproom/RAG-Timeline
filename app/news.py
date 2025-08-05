@@ -4,17 +4,20 @@ Module for storing news scrapers
 
 from __future__ import annotations
 
-from datetime import _Date, datetime, timedelta #type: ignore / using _Date for type hints only
+from datetime import (_Date,  # type: ignore / using _Date for type hints only
+                      datetime, timedelta)
 from enum import Enum
 from typing import Any
 
 import newspaper
 import pandas as pd
 from gdeltdoc import Filters, GdeltDoc
+
+from app.constants import ArticleDict, GdeltDict
 from app.exc import ScraperError
 from app.log import app_logger
 from gdelt_theme_set import GDELT_THEMES
-from app.constants import GdeltDict, ArticleDict, ChunkDict
+
 
 class GdeltSource(Enum):
     """Storafe Enum for source links in Gdelt"""
@@ -66,9 +69,9 @@ class ArticleFetcher:
             existing_titles.add(possible_title)
 
             try:
-                article = newspaper.article(        # pyright: ignore[reportUnknownMemberType]
+                article = newspaper.article(  # pyright: ignore[reportUnknownMemberType]
                     url
-                )  
+                )
             except:
                 app_logger.warning(f"Error encountered while fetching: {url}")
                 continue
@@ -81,7 +84,7 @@ class ArticleFetcher:
     def _article_to_dict(cls, article: newspaper.Article) -> ArticleDict:
         """Convert the Article object into a friendly dict"""
 
-        new_dict: ArticleDict =  {
+        new_dict: ArticleDict = {
             "text": format_text(article.text),
             "title": article.title,
             "authors": article.authors,
@@ -91,10 +94,6 @@ class ArticleFetcher:
         }
 
         return new_dict
-    
-    @classmethod
-    def _add_metadata(cls, article_dict: dict[str, str | None | datetime | list[str]]):
-        """Adds meta data like length, expected tokens, sentences etc, """
 
 
 class GdeltScrapper:
@@ -103,7 +102,7 @@ class GdeltScrapper:
 
     def __init__(self) -> None:
         """Class for managing scrapping GDelt and adding articles to the database"""
-        self.results: list[dict[str, Any]] = []
+        self.results: list[ArticleDict] = []
 
     def clear_results(self):
         """Method to clear the results from the scraper"""
