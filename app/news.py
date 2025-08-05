@@ -4,8 +4,7 @@ Module for storing news scrapers
 
 from __future__ import annotations
 
-from datetime import (_Date,  # type: ignore / using _Date for type hints only
-                      datetime, timedelta)
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -32,7 +31,7 @@ class GdeltSource(Enum):
     Guardian = "theguardian.com"
 
 
-def format_date(date: _Date) -> str:
+def format_date(date: datetime) -> str:
     """Helper method to format a date for scrapers"""
     return date.strftime("%Y-%m-%d")
 
@@ -113,8 +112,8 @@ class GdeltScrapper:
         keywords: str | None = None,
         theme: str | None = None,
         sources: list[GdeltSource] | None = None,
-        start_date: _Date = datetime.now().date() - timedelta(days=7),
-        end_date: _Date = datetime.now().date(),
+        start_date: datetime = datetime.now().date() - timedelta(days=7),
+        end_date: datetime = datetime.now().date(),
         num_records: int = 5,
     ):
         """Scrapes gdelt for the specified inputs"""
@@ -181,8 +180,8 @@ class GdeltScrapper:
         keywords: str | None,
         theme: str | None,
         sources: list[GdeltSource],
-        start_date: _Date,
-        end_date: _Date,
+        start_date: datetime,
+        end_date: datetime,
     ) -> bool:
         """Validates that the scraper input is valid and avoids common Gdelt query errors"""
         is_valid = True

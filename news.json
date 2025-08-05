@@ -1,0 +1,39 @@
+{
+  "title": {
+    "text": {
+      "headline": "My Project Timeline",
+      "text": "A brief overview of major events in the project."
+    }
+  },
+  "events": [
+    {
+      "start_date": { "year": 2022, "month": 1, "day": 15 },
+      "text": {
+        "headline": " Project Kickoff",
+        "text": "The project officially started with team onboarding and planning."
+      }
+    },
+    {
+      "start_date": { "year": 2022, "month": 4 },
+      "end_date": { "year": 2022, "month": 2 },
+      "text": {
+        "headline": " MVP Released",
+        "text": "Released a minimum viable product for internal testing."
+      }
+    },
+    {
+      "start_date": { "year": 2023, "month": 2 },
+      "text": {
+        "headline": " Public Launch",
+        "text": "The product was launched to the public with great success."
+      }
+    },
+    {
+      "start_date": { "year": 2024, "month": 6 },
+      "text": {
+        "headline": " Milestone Reached",
+        "text": "We hit 1 million users!"
+      }
+    }
+  ]
+}

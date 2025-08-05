@@ -55,7 +55,7 @@ class Reranker:
 class RAG:
 
     NUM_ARTICLES = 5
-    GENERIC_MULTIPLE = 3
+    GENERIC_MULTIPLE = 1
 
     def __init__(
         self,
@@ -88,10 +88,12 @@ class RAG:
         self.context = query_resp_list.copy()
         self.ranked_context = self.reranker.rerank(query_str, query_resp_list)
 
-    def set_query(self, query_str: str):
+    def set_query(self, query_str: str, num_retrieve: int | None = None):
         """Sets query string and searches db to load context"""
         self.clear_context()
         app_logger.debug(f"Updating context to for query: {query_str}")
+
+        self.articles_per_context = num_retrieve or self.NUM_ARTICLES
 
         # times 3 to get more information before passing to reranker
         query_results = self.db.query_db(
@@ -102,6 +104,10 @@ class RAG:
         self.query_str = query_str
         self.context = query_results
         self.ranked_context = ranked_results
+
+    def get_ranked_context(self) -> list[tuple[float, const.QueryResDict]]:
+        """Returns the ranked context"""
+        return self.ranked_context
 
     def clear_context(self):
         """Clears current query string and context"""
@@ -140,18 +146,19 @@ class RAG:
         prompt_str = self._format_prompt(self.query_str, prompt_format)
         template = [{"role": "user", "content": prompt_str}]
         prompt = self.tokenizer.apply_chat_template(template, tokenize=False, add_generation_prompt=True)  # type: ignore
-        tokens = self.tokenizer(prompt, return_tensor="pt").to("cuda")  # type: ignore
+        tokens = self.tokenizer(prompt, return_tensors="pt").to("cuda")  # type: ignore
 
-        app_logger.debug("Generating RAG response")
-        output_text = self.model.generate(  # type: ignore
+        app_logger.debug("Generating RAG response...")
+        output_tokens = self.model.generate(  # type: ignore
             **tokens,
             temperature=self.temp,
             do_sample=True,
             max_new_tokens=self.max_new_tokens,
             pad_token_id=self.tokenizer.eos_token_id,  # just to get rid of a warning msg # type: ignore
         )
-
-        output_text: str
+        app_logger.debug("Done!")
+    
+        output_text = self.tokenizer.decode(output_tokens[0])
 
         if format_output:
             output_text = output_text.replace(prompt, "").replace("<s> ", "").replace("</s>", "")  # type: ignore
@@ -160,8 +167,8 @@ class RAG:
 
     def _format_prompt(self, query_str: str, prompt_format: str) -> str:
         """Create prompt"""
-        prompt_str = self._create_context_str(self.articles_per_context, True)
-        prompt_str = prompt_format.format(prompt_str, query_str)
+        context_str = self._create_context_str(self.articles_per_context, True)
+        prompt_str = prompt_format.format(context=context_str, query_str = query_str)
 
         return prompt_str
 
@@ -214,12 +221,12 @@ class RAG:
             - For each event, provide a short title, a brief description, and an exact or approximate date or date range.
             - Return the results in a structured, easy-to-parse format as a list of dictionaries like this:
 
-            [
-                {
+            [                
+                {{
                     "title": "<event title>",
                     "description": "<brief description>",
                     "date": "<date or date range>"
-                },
+                }},
                 ...
             ]
 

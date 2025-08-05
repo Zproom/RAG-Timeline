@@ -4,8 +4,7 @@ Main execution script for the `RAG Timeline` application
 
 import argparse
 import logging
-
-from app import App
+import streamlit as st
 
 VALID_LOG_LEVELS = {
     "debug": logging.DEBUG,
@@ -13,7 +12,6 @@ VALID_LOG_LEVELS = {
     "warning": logging.WARNING,
     "error": logging.ERROR,
 }
-
 
 def get_parser() -> argparse.ArgumentParser:
     """Build the argument parser"""
@@ -43,20 +41,28 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+@st.cache_resource
+def get_app(log_level):
+    from app import App
+    return App(log_level)
+
+
 def main(log_level: int, update: bool):
     """Main execution function"""
 
-    if update:
-        App.download_feed(log_level)
-    else:
-        app = App(log_level)
-        app.execute()
+    app = get_app(log_level)
+    app.execute()
 
+    # if update:`
+    #     App.download_feed(log_level)
+    # else:
+    #     app = App(log_level)
+    #     app.execute()`
+    
+main(logging.DEBUG, False)
 
-if __name__ == "__main__":
-    print("Hi")
+# if __name__ == "__main__":
+#     parser = get_parser()
+#     args = parser.parse_args()
 
-    parser = get_parser()
-    args = parser.parse_args()
-
-    main(log_level=VALID_LOG_LEVELS[args.log_level], update=args.update)
+#     main(log_level=VALID_LOG_LEVELS[args.log_level], update=args.update)

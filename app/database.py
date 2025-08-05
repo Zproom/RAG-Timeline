@@ -69,6 +69,7 @@ class Vector_DB:
                 ),
             )
 
+    # TODO: allow querying by datetime - must change import to use ints not strings for those
     def query_db(self, query_str: str, num_retrieve: int = 5) -> list[QueryResDict]:
         """Returns entries with similar vectors as query_str"""
         app_logger.debug(f"Querying db for entries similar to: {query_str}")
@@ -181,15 +182,15 @@ class Vector_DB:
         for point in query_res.points:
             chunk = point.payload
             new_dict: QueryResDict = {  # type: ignore
+                "score": float(point.score),
+                "vector": point.vector,  # type: ignore
                 "source": chunk["source"],  # type: ignore
                 "date": chunk["date"],  # type: ignore
-                "url": chunk["url"],  # type: ignore
                 "title": chunk["title"],  # type: ignore
                 "authors": chunk["authors"],  # type: ignore
                 "text": chunk["text"],  # type: ignore
-                "chunk": chunk["chunk"],  # type: ignore
-                "score": float(point.score),
-                "vector": point.vector,  # type: ignore
+                "url": chunk["url"],  # type: ignore
+                # "chunk": chunk["chunk"],  # type: ignore
             }
             result.append(new_dict)
 

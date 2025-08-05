@@ -5,13 +5,12 @@ General purpose module for storing misc functions and utilities
 from __future__ import annotations
 
 import os
-from datetime import (  # type: ignore / using _Date only for type hinting
-    _Date, datetime)
+from datetime import datetime
 from typing import Any
 
-import torch
 from huggingface_hub import HfFolder, whoami  # type: ignore
 from sentence_transformers import CrossEncoder, SentenceTransformer
+from torch import cuda, float16
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.utils.import_utils import is_flash_attn_2_available
 from transformers.utils.quantization_config import BitsAndBytesConfig
@@ -43,8 +42,8 @@ def connect_hugging_face() -> bool:
 def get_cuda_name() -> str | None:
     """Gets the name of the cuda device"""
 
-    if torch.cuda.is_available():
-        device = torch.cuda.get_device_name(torch.cuda.current_device())
+    if cuda.is_available():
+        device = cuda.get_device_name(cuda.current_device())
         return device
 
     return None
@@ -52,11 +51,11 @@ def get_cuda_name() -> str | None:
 
 def log_cuda_mem():
     """Helper method to print the current memory used/available on cuda device"""
-    if torch.cuda.is_available():
-        gpu_id = torch.cuda.current_device()
-        total = torch.cuda.get_device_properties(gpu_id).total_memory  # type: ignore
-        reserved = torch.cuda.memory_reserved(gpu_id)
-        allocated = torch.cuda.memory_allocated(gpu_id)
+    if cuda.is_available():
+        gpu_id = cuda.current_device()
+        total = cuda.get_device_properties(gpu_id).total_memory  # type: ignore
+        reserved = cuda.memory_reserved(gpu_id)
+        allocated = cuda.memory_allocated(gpu_id)
         free = reserved - allocated
 
         app_logger.debug(f"Total memory:     {total / 1e6:.2f} MB")
@@ -76,7 +75,7 @@ def create_embedding_model(
     model = SentenceTransformer(model_name)
 
     if send_to_cuda:
-        if torch.cuda.is_available():
+        if cuda.is_available():
             model.to("cuda")
             app_logger.debug(
                 f"Embedding model sent to cuda device: {get_cuda_name()}..."
@@ -100,7 +99,7 @@ def create_reranker_model(
     model = CrossEncoder(model_name)
 
     if send_to_cuda:
-        if torch.cuda.is_available():
+        if cuda.is_available():
             model.to("cuda")
             app_logger.debug(f"Reranker model sent to cuda device: {get_cuda_name()}")
         else:
@@ -122,18 +121,18 @@ def create_llm(
     quant_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_compute_dtype=float16,
         bnb_4bit_quant_type="nf4",
     )
 
     config: dict[str, Any] = {
         "pretrained_model_name_or_path": model_name,
-        "torch_dtype": torch.float16,
+        "torch_dtype": float16,
         "device_map": "auto",
         "quantization_config": quant_config,
     }
 
-    if is_flash_attn_2_available() and (torch.cuda.get_device_capability(0)[0] >= 8):
+    if is_flash_attn_2_available() and (cuda.get_device_capability(0)[0] >= 8):
         app_logger.debug(f"Using flash_attention_2")
         config["attn_implementation"] = "flash_attention_2"
 
@@ -148,7 +147,7 @@ def create_llm(
     return tokenizer, llm  # pyright: ignore[reportUnknownVariableType]
 
 
-def format_date(date: datetime | _Date | None) -> str:
+def format_date(date: datetime | None) -> str:
     """Converts date or datetime into a str"""
     if date is None:
         return ""

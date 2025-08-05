@@ -23,7 +23,7 @@ SENTENCES_PER_CHUNK = 10
 ################################################################
 ########################## MODEL NAME ##########################
 ################################################################
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 LLM_MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.3"
 RERANKING_MODEL_NAME = "cross-encoder/ms-marco-TinyBERT-L-2-v2"
 
@@ -77,4 +77,21 @@ class QueryResDict(TypedDict):
     authors: list[str]
     text: str
     url: str
-    chunk: int
+    # chunk: int
+
+
+class DataPayload(TypedDict):
+    summary_prompt: str
+    summary: str
+    event_prompt: str
+    events: str
+    ranked_articles: list[tuple[float, QueryResDict]]
+
+
+################################################################
+############## UI Props ##############
+################################################################
+
+WINDOW_TITLE = "News Timeline"
+WINDOW_ICON = "📰"
+SIDEBAR_TITLE = "Search News"
