@@ -1,4 +1,12 @@
+"""
+Module for storing the programs application logger
+"""
+from __future__ import annotations
+
 import logging
+from typing import Any, Iterable
+
+from tqdm import tqdm
 
 
 class AppLogger(logging.Logger):
@@ -15,6 +23,15 @@ class AppLogger(logging.Logger):
 
     def is_debug(self) -> bool:
         return self.isEnabledFor(logging.DEBUG)
+
+    def tqdm(
+        self, iterable: Iterable[Any], desc: str | None = None, ignore: bool = False
+    ):
+        """Only use tqdm bar while debugging"""
+        if not ignore and self.isEnabledFor(logging.DEBUG):
+            return tqdm(iterable, desc=desc)
+
+        return iterable
 
 
 app_logger = AppLogger("`RAG Timeline`", level=logging.DEBUG)

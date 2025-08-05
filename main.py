@@ -27,7 +27,7 @@ def get_parser() -> argparse.ArgumentParser:
         "--log-level",
         type=str,
         choices=VALID_LOG_LEVELS.keys(),
-        default=VALID_LOG_LEVELS["debug"],
+        default="debug",
         help="Set the log level for the application (default: info)",
         dest="log_level",
     )
