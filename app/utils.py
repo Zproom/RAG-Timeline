@@ -69,7 +69,7 @@ def log_cuda_mem():
 def create_embedding_model(
     model_name: str = const.EMBEDDING_MODEL_NAME, send_to_cuda: bool = True
 ) -> SentenceTransformer:
-    """Initializes a reranker model"""
+    """Initializes a embedding model"""
     app_logger.debug(f"Attempting to initialize a embedding model: {model_name}...")
 
     model = SentenceTransformer(model_name)

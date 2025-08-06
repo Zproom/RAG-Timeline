@@ -31,10 +31,17 @@ RERANKING_MODEL_NAME = "cross-encoder/ms-marco-TinyBERT-L-2-v2"
 ################# GENERATION STEP CONFIG NAME ##################
 ################################################################
 
-MAX_NEW_TOKENS = 256
+MAX_NEW_TOKENS_SUMMARY = 256
+MAX_NEW_TOKENS_EVENTS = 512
 TEMPERATURE = 0.7
 NUM_RESOURCES = 5
 CHARS_PER_TOKEN = 1 / 4  # estimated and used in lieu of a misc / 4 where needed
+
+################################################################
+############## LDA Props ##############
+################################################################
+
+NUM_LDA_TOPICS = 50
 
 ################################################################
 ############## Typed dict to help with type hints ##############
@@ -79,6 +86,7 @@ class QueryResDict(TypedDict):
     url: str
     # chunk: int
 
+from typing import Any
 
 class DataPayload(TypedDict):
     summary_prompt: str
@@ -86,6 +94,7 @@ class DataPayload(TypedDict):
     event_prompt: str
     events: str
     ranked_articles: list[tuple[float, QueryResDict]]
+    topics: Any
 
 
 ################################################################

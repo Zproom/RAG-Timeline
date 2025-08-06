@@ -48,6 +48,7 @@ class App:
         summary_prompt, summary = self.rag.ask_summary()
         event_prompt, events = self.rag.ask_key_events()
         ranked_articles = self.rag.get_ranked_context()[:num_articles]
+        topics = self.rag.topic_model_context()
 
         payload: const.DataPayload = {
             "summary_prompt": summary_prompt,
@@ -55,6 +56,7 @@ class App:
             "events": events,
             "event_prompt": event_prompt,
             "ranked_articles": ranked_articles,
+            "topics": topics
         }
 
         return payload

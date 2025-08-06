@@ -6,13 +6,17 @@ import sys
 from datetime import datetime, timedelta
 from typing import Callable
 
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_timeline import timeline
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
 import app.constants as const
 import app.log as log
+from typing import Any
 
+JSON_EVENT_FILE = "last_event.json"
 
 class Controller:
 
@@ -59,8 +63,21 @@ class Controller:
         st.session_state["summary_prompt"] = payload["summary_prompt"]
         st.session_state["event_prompt"] = payload["event_prompt"]
         st.session_state["chunks"] = payload["ranked_articles"]
+        st.session_state["topics"] = payload["topics"]
 
+    def events_to_timeline(self):
+        """Writes the events to the news.json file for use in the timeline"""
 
+        events_str: str = st.session_state["event_result"]
+        
+        with open("events_log.txt", "a+") as file:
+            file.write(f"\n\nQuery_time: {datetime.now()}")
+            file.write(events_str)
+
+        json_output = json.loads(events_str)
+        with open(JSON_EVENT_FILE, "w+") as file:
+            json.dump(json_output, file, indent=4)
+            
 class View:
 
     def __init__(
@@ -120,7 +137,7 @@ class View:
                 key="end_date",
             )
             st.number_input(
-                "Number of Results", min_value=1, max_value=5, key="article_count"
+                "Number of Results", min_value=1, max_value=10, key="article_count"
             )
             st.text_input(
                 "Search Query", key="search_query"
@@ -170,6 +187,8 @@ class View:
         if "chunks" not in st.session_state:
             st.session_state["chunks"] = []
 
+        if "topics" not in st.session_state:
+            st.session_state["topics"] = {}
 
     def _init_tabs(self):
         """Initialize the tabs"""
@@ -196,11 +215,11 @@ class View:
         if not st.session_state["show_tabs"]:
             return
 
-        st.text_area("Summary of Events:", key="summary_result", disabled=True)
+        st.text_area("Summary of Events:", key="summary_result", disabled=True, height=400)
 
-        st.text_area("Summary of Events:", key="event_result", disabled=True)
+        self.controller.events_to_timeline()
 
-        with open("news.json", "r") as f:
+        with open(JSON_EVENT_FILE, "r") as f:
             timeline_data = json.load(f)
 
         timeline(timeline_data, height=600)
@@ -213,12 +232,11 @@ class View:
         for score, chunk in st.session_state["chunks"]:
             self.render_chunk(score, chunk)
 
-
     def render_chunk(self, score: float, chunk: const.QueryResDict):
 
         date_text = chunk.get("date", "")
         date_text = f"[published - {date_text}]" if date_text != "" else ""
-        score_text = f"Score: {score:.2f},"
+        score_text = f"Score: {score:.6f},"
         main_text = " ".join([score_text, chunk["title"], date_text])
         with st.expander(main_text):
             st.markdown(f"**Source:** {chunk.get('source', 'N/A')}")
@@ -231,15 +249,26 @@ class View:
         """Initialize the articles tab"""
         if not st.session_state["show_tabs"]:
             return
+        
+        word_freqs = st.session_state["topics"]        
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freqs)
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
+
+        st.pyplot(fig)
 
     def _init_tab_prompts(self):
         """Initializes the prompts tab"""
         if not st.session_state["show_tabs"]:
             return
 
-        st.text_area("Prompt for the summary:", key="summary_prompt", disabled=True)
+        st.text_area("Prompt for the summary:", key="summary_prompt", disabled=True, height=600)
 
-        st.text_area("Prompt for the events:", key="event_prompt", disabled=True)
+        st.text_area("Prompt for the events:", key="event_prompt", disabled=True, height=600)
+
+        st.text_area("Events raw output:", key="event_result", disabled=True, height=1000)
 
     @st.dialog("Search for Articles?")
     def yes_no_popup(self):
