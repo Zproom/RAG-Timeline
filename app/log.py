@@ -4,28 +4,10 @@ Module for storing the programs application logger
 
 from __future__ import annotations
 
-import argparse
 import logging
 from typing import Any, Iterable
 
 from tqdm import tqdm
-
-def get_parser() -> argparse.ArgumentParser:
-    """Build the argument parser"""
-
-    parser = argparse.ArgumentParser(
-        prog="RAG_Timeline", formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "-d",
-        "--download-feed",
-        help="Pull in the latest feeds via the RSS Feed library.",
-        dest="update",
-        action="store_true",
-    )
-
-    return parser
 
 class AppLogger(logging.Logger):
 

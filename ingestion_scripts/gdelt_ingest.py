@@ -35,7 +35,8 @@ def get_parser() -> argparse.ArgumentParser:
         help="Specifies the number of records to retrieve and add to the database.",
         dest="num_records",
         default=30,
-        required=False
+        required=False,
+        type=int
     )
 
     return parser

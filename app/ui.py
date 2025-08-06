@@ -6,19 +6,17 @@ import sys
 from datetime import datetime, timedelta
 from typing import Callable
 
+from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_timeline import timeline
-from wordcloud import WordCloud
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
-from typing import Any
-
 import app.constants as const
 import app.log as log
+from typing import Any
 
 JSON_EVENT_FILE = "last_event.json"
-
 
 class Controller:
 
@@ -46,7 +44,7 @@ class Controller:
 
             if payload is not None:
                 self.update_with_payload(payload)
-
+        
         st.session_state["query_str"] = query_str
 
         if query_str == "":
@@ -71,7 +69,7 @@ class Controller:
         """Writes the events to the news.json file for use in the timeline"""
 
         events_str: str = st.session_state["event_result"]
-
+        
         with open("events_log.txt", "a+") as file:
             file.write(f"\n\nQuery_time: {datetime.now()}")
             file.write(events_str)
@@ -79,8 +77,7 @@ class Controller:
         json_output = json.loads(events_str)
         with open(JSON_EVENT_FILE, "w+") as file:
             json.dump(json_output, file, indent=4)
-
-
+            
 class View:
 
     def __init__(
@@ -116,9 +113,7 @@ class View:
         )
 
         st.title("News Timeline")
-        st.text_input(
-            "Entered Query String:", disabled=True, value=st.session_state["query_str"]
-        )
+        st.text_input("Entered Query String:", disabled=True, value=st.session_state["query_str"])
 
     def _init_sidebar(self):
         """Initialize the sidebar"""
@@ -144,7 +139,9 @@ class View:
             st.number_input(
                 "Number of Results", min_value=1, max_value=10, key="article_count"
             )
-            st.text_input("Search Query", key="search_query")
+            st.text_input(
+                "Search Query", key="search_query"
+            )
 
             submitted = st.form_submit_button("Submit Query")
 
@@ -164,17 +161,17 @@ class View:
             st.session_state["show_tabs"] = False
 
         if "start_date" not in st.session_state:
-            st.session_state["start_date"] = datetime.now() - timedelta(days=7)
+            st.session_state["start_date"] = (datetime.now() - timedelta(days=7))
 
         if "end_date" not in st.session_state:
             st.session_state["end_date"] = datetime.now()
 
         if "article_count" not in st.session_state:
             st.session_state["article_count"] = 3
-
+        
         if "show_tabs" not in st.session_state:
             st.session_state["show_tabs"] = False
-
+        
         if "summary_prompt" not in st.session_state:
             st.session_state["summary_prompt"] = ""
 
@@ -214,13 +211,11 @@ class View:
 
     def _init_tab_summary(self):
         """Initialize the summary tab"""
-
+        
         if not st.session_state["show_tabs"]:
             return
 
-        st.text_area(
-            "Summary of Events:", key="summary_result", disabled=True, height=400
-        )
+        st.text_area("Summary of Events:", key="summary_result", disabled=True, height=400)
 
         self.controller.events_to_timeline()
 
@@ -233,7 +228,7 @@ class View:
         """Initialize the articles tab"""
         if not st.session_state["show_tabs"]:
             return
-
+        
         for score, chunk in st.session_state["chunks"]:
             self.render_chunk(score, chunk)
 
@@ -246,9 +241,7 @@ class View:
         with st.expander(main_text):
             st.markdown(f"**Source:** {chunk.get('source', 'N/A')}")
             st.markdown(f"**Authors:** {', '.join(chunk.get('authors', []))}")
-            st.markdown(
-                f"**URL:** [{chunk.get('url', 'N/A')}]({chunk.get('url', '#')})"
-            )
+            st.markdown(f"**URL:** [{chunk.get('url', 'N/A')}]({chunk.get('url', '#')})")
             st.markdown("**Text:**")
             st.write(chunk.get("text", "No text available."))
 
@@ -256,15 +249,13 @@ class View:
         """Initialize the articles tab"""
         if not st.session_state["show_tabs"]:
             return
-
-        word_freqs = st.session_state["topics"]
-        wordcloud = WordCloud(
-            width=800, height=400, background_color="white"
-        ).generate_from_frequencies(word_freqs)
+        
+        word_freqs = st.session_state["topics"]        
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freqs)
 
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.imshow(wordcloud, interpolation="bilinear")
-        ax.axis("off")
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
 
         st.pyplot(fig)
 
@@ -273,17 +264,11 @@ class View:
         if not st.session_state["show_tabs"]:
             return
 
-        st.text_area(
-            "Prompt for the summary:", key="summary_prompt", disabled=True, height=600
-        )
+        st.text_area("Prompt for the summary:", key="summary_prompt", disabled=True, height=600)
 
-        st.text_area(
-            "Prompt for the events:", key="event_prompt", disabled=True, height=600
-        )
+        st.text_area("Prompt for the events:", key="event_prompt", disabled=True, height=600)
 
-        st.text_area(
-            "Events raw output:", key="event_result", disabled=True, height=1000
-        )
+        st.text_area("Events raw output:", key="event_result", disabled=True, height=1000)
 
     @st.dialog("Search for Articles?")
     def yes_no_popup(self):

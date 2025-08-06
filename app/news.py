@@ -34,8 +34,8 @@ class GdeltSource(Enum):
     # ESPN = "espn.com"
     SkySports = "skysports.com"
     # NPR = "npr.org"
-    # WashingtonPost = "washingtonpost.com"
-    # SkyNews = "news.sky.com"
+    WashingtonPost = "washingtonpost.com"
+    SkyNews = "news.sky.com"
     Independent = "independent.co.uk"
 
 
@@ -70,7 +70,7 @@ class ArticleFetcher:
     """Container class that wraps the newspaper4k module"""
 
     @classmethod
-    def fecth_articles(cls, urls: list[str] | str) -> list[const.ArticleDict]:
+    def fecth_articles(cls, titles: list[str], urls: list[str] | str) -> list[const.ArticleDict]:
         """Queries article urls and extracts text and metadata"""
         urls = urls if isinstance(urls, list) else [urls]
 
@@ -81,16 +81,22 @@ class ArticleFetcher:
         # different site, e.g., cnn.com vs cnn.uk)
         # to reduce duplicate work
         existing_titles: set[str] = set()
-        for url in app_logger.tqdm(urls, "Fetching articles text and metadata..."):
+
+        # extracting first because it was causing issues for tqdm
+        title_url = [(title, url) for title, url in zip(titles, urls)]
+        for title, url in app_logger.tqdm(title_url, "Fetching articles text and metadata..."):
             url: str
 
             # news.articles is an expensive operation so verify
             # the current story hasn't already been retrieved
-            possible_title = url.rsplit("/", 1)[-1]
-            if possible_title in existing_titles:
-                app_logger.debug(f"Removed duplicate story: {possible_title}")
+            if title == "":
+                title = url.rsplit("/", 1)[-1]
+                if title == "":
+                    title = url.rsplit("/", 1)[-2]
+            if title in existing_titles:
+                app_logger.debug(f"Removed duplicate story: {title}")
                 continue
-            existing_titles.add(possible_title)
+            existing_titles.add(title)
 
             try:
                 article = newspaper.article(  # pyright: ignore[reportUnknownMemberType]
@@ -131,7 +137,8 @@ class RssScraper(_Scraper):
         rss_list = self._get_rss_articles(source, feed_url)
 
         urls = [rss["url"] for rss in rss_list]
-        articles = ArticleFetcher.fecth_articles(urls)
+        titles = [rss["title"] for rss in rss_list]
+        articles = ArticleFetcher.fecth_articles(titles, urls)
 
         app_logger.debug(
             f"Scaping complete. {len(articles)} articles remain after filtering"
@@ -178,7 +185,7 @@ class GdeltScrapper(_Scraper):
         keywords: str | None = None,
         theme: str | None = None,
         sources: list[GdeltSource] | None = None,
-        start_date: datetime = datetime.now().date() - timedelta(days=30),  # type: ignore / cannot access _Date so this kinda works
+        start_date: datetime = datetime.now().date() - timedelta(days=const.GDELT_TIMEDELTA),  # type: ignore / cannot access _Date so this kinda works
         end_date: datetime = datetime.now().date(),  # type: ignore / cannot access _Date so this kinda works
         num_records: int = 30,
     ):
@@ -208,7 +215,8 @@ class GdeltScrapper(_Scraper):
         gdelt_results = self._search(gdelt_filter)
 
         story_urls = [story["url"] for story in gdelt_results]
-        articles = ArticleFetcher.fecth_articles(story_urls)
+        titles = [story["title"] for story in gdelt_results]
+        articles = ArticleFetcher.fecth_articles(titles, story_urls)
 
         app_logger.debug(
             f"Scaping complete. {len(articles)} articles remain after filtering"

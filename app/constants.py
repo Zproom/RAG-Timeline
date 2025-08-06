@@ -12,7 +12,7 @@ from torch import Tensor
 ################################################################
 
 # TODO: update collection name to non testing
-COLLECTION_NAME = "News_test"
+COLLECTION_NAME = "Rag_Production" # "News_test"
 
 # length of embeddings from using the model: all-MiniLM-L6-v2
 VECTOR_LENGTH = 384
@@ -41,7 +41,14 @@ CHARS_PER_TOKEN = 1 / 4  # estimated and used in lieu of a misc / 4 where needed
 ########################## LDA Props ###########################
 ################################################################
 
-NUM_LDA_TOPICS = 50
+NUM_LDA_TOPICS = 30
+
+################################################################
+############################ Gdelt #############################
+################################################################
+
+# number of days previous that articles are pulled from for GDelt
+GDELT_TIMEDELTA = 90
 
 ################################################################
 ######################## RSS FEED URLs #########################

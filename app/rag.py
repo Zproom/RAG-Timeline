@@ -98,7 +98,7 @@ class Reranker:
 class RAG:
 
     NUM_ARTICLES = 5
-    GENERIC_MULTIPLE = 1
+    GENERIC_MULTIPLE = 5
 
     def __init__(
         self,
