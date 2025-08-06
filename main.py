@@ -2,67 +2,22 @@
 Main execution script for the `RAG Timeline` application
 """
 
-import argparse
 import logging
 import streamlit as st
-
-VALID_LOG_LEVELS = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-}
-
-def get_parser() -> argparse.ArgumentParser:
-    """Build the argument parser"""
-
-    parser = argparse.ArgumentParser(
-        prog="RAG_Timeline", formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    # TODO: update default to info
-    parser.add_argument(
-        "--log-level",
-        type=str,
-        choices=VALID_LOG_LEVELS.keys(),
-        default="debug",
-        help="Set the log level for the application (default: info)",
-        dest="log_level",
-    )
-
-    parser.add_argument(
-        "-d",
-        "--download-feed",
-        help="Pull in the latest feeds via the RSS Feed library.",
-        dest="update",
-        action="store_true",
-    )
-
-    return parser
 
 
 @st.cache_resource
 def get_app(log_level):
     from app import App
+
     return App(log_level)
 
 
-def main(log_level: int, update: bool):
+def main(log_level: int):
     """Main execution function"""
 
     app = get_app(log_level)
     app.execute()
 
-    # if update:`
-    #     App.download_feed(log_level)
-    # else:
-    #     app = App(log_level)
-    #     app.execute()`
-    
-main(logging.DEBUG, False)
+main(logging.DEBUG)
 
-# if __name__ == "__main__":
-#     parser = get_parser()
-#     args = parser.parse_args()
-
-#     main(log_level=VALID_LOG_LEVELS[args.log_level], update=args.update)

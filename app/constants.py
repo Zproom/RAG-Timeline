@@ -3,7 +3,7 @@ Modue for storing constants that are not expected to change
 """
 
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from torch import Tensor
 
@@ -38,10 +38,24 @@ NUM_RESOURCES = 5
 CHARS_PER_TOKEN = 1 / 4  # estimated and used in lieu of a misc / 4 where needed
 
 ################################################################
-############## LDA Props ##############
+########################## LDA Props ###########################
 ################################################################
 
 NUM_LDA_TOPICS = 50
+
+################################################################
+######################## RSS FEED URLs #########################
+################################################################
+
+RSS_FEED_URLS = [
+    ("BBC", "http://feeds.bbci.co.uk/news/world/rss.xml"),
+    ("CNN", "http://rss.cnn.com/rss/edition.rss"),
+    ("NYTimes", "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"),
+    ("Reuters", "http://feeds.reuters.com/reuters/topNews"),
+    ("The Guardian", "https://www.theguardian.com/world/rss"),
+    ("Washington", "http://feeds.washingtonpost.com/rss/world"),
+    ("ABC News", "https://abcnews.go.com/abcnews/internationalheadlines"),
+]
 
 ################################################################
 ############## Typed dict to help with type hints ##############
@@ -75,6 +89,13 @@ class GdeltDict(TypedDict):
     country: str
 
 
+class RssDict(TypedDict):
+    url: str
+    title: str
+    source: str
+    domain: str
+
+
 class QueryResDict(TypedDict):
     score: float
     vector: Tensor
@@ -86,7 +107,6 @@ class QueryResDict(TypedDict):
     url: str
     # chunk: int
 
-from typing import Any
 
 class DataPayload(TypedDict):
     summary_prompt: str

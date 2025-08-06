@@ -17,3 +17,7 @@ docker run -d --name qdrant -p 6333:6333 \
 
 
 
+# To execute the ingestion scripts, use the following commands from the root folder:
+
+py -m ingestion_scripts.gdelt_ingest -k <>
+py -m ingestion_scripts.rss_ingest

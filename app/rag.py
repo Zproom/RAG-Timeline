@@ -8,23 +8,28 @@ link: https://www.youtube.com/watch?v=qN_2fnOPY-M
 
 from __future__ import annotations
 
+import json
+import re
 import textwrap
+
+import numpy as np
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
 
 import app.constants as const
 from app.database import Vector_DB
 from app.exc import RagError
 from app.log import app_logger
 from app.utils import create_llm, create_reranker_model
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
 
-import re
-import json
-import numpy as np
 
 class Lda:
 
-    def __init__(self, context: list[tuple[float, const.QueryResDict]], num_topics: int | None = None ) -> None:
+    def __init__(
+        self,
+        context: list[tuple[float, const.QueryResDict]],
+        num_topics: int | None = None,
+    ) -> None:
         """Function for topic modeling over the context"""
         self.num_topics = num_topics or const.NUM_LDA_TOPICS
 
@@ -33,22 +38,25 @@ class Lda:
         self.vectorizer = CountVectorizer(stop_words="english")
         self.doc_term_matrix = self.vectorizer.fit_transform(self.documents)
 
-        self.lda_model = LatentDirichletAllocation(n_components=self.num_topics, random_state=42)
+        self.lda_model = LatentDirichletAllocation(
+            n_components=self.num_topics, random_state=42
+        )
         self.lda_model.fit(self.doc_term_matrix)
-    
+
     def get_topic_word_freqs(self, topic_idx: int):
         topic = self.lda_model.components_[topic_idx]
         feature_names = self.vectorizer.get_feature_names_out()
-        top_indices = topic.argsort()[:-self.num_topics - 1:-1]
+        top_indices = topic.argsort()[: -self.num_topics - 1 : -1]
         return {feature_names[i]: topic[i] for i in top_indices}
 
     def get_aggregate_topic_frequencies(self) -> dict[str, float]:
         # Sum across all topics to get total word weight
         combined_topic = np.sum(self.lda_model.components_, axis=0)
         feature_names = self.vectorizer.get_feature_names_out()
-        top_indices = combined_topic.argsort()[-self.num_topics:][::-1]
-        
+        top_indices = combined_topic.argsort()[-self.num_topics :][::-1]
+
         return {feature_names[i]: combined_topic[i] for i in top_indices}
+
 
 class Reranker:
 
@@ -106,7 +114,7 @@ class RAG:
         self.temp = const.TEMPERATURE
         self.max_new_tokens_summary = const.MAX_NEW_TOKENS_SUMMARY
         self.max_new_tokens_events = const.MAX_NEW_TOKENS_EVENTS
-        
+
         self.reranker = Reranker(reranker_model_name)
         app_logger.debug("Initializating llm model...")
 
@@ -158,7 +166,9 @@ class RAG:
             app_logger.debug("Requesting summary prior to context being populated")
             raise RagError("Requesting summary prior to context being populated")
 
-        prompt, summary = self.generate(self._summary_format(), True, return_tokens=self.max_new_tokens_summary)
+        prompt, summary = self.generate(
+            self._summary_format(), True, return_tokens=self.max_new_tokens_summary
+        )
 
         return prompt, summary
 
@@ -168,14 +178,19 @@ class RAG:
             app_logger.debug("Requesting events prior to context being populated")
             raise RagError("Requesting events prior to context being populated")
 
-        prompt, summary = self.generate(self._event_format(), True, return_tokens=self.max_new_tokens_events)
+        prompt, summary = self.generate(
+            self._event_format(), True, return_tokens=self.max_new_tokens_events
+        )
 
         updated_summary = self._sanitize_events(summary)
 
         return prompt, updated_summary
 
     def generate(
-        self, prompt_format: str, format_output: bool = True, return_tokens: int | None = None
+        self,
+        prompt_format: str,
+        format_output: bool = True,
+        return_tokens: int | None = None,
     ) -> tuple[str, str]:
         """Generates the prompt to be returned from the RAG"""
 
@@ -185,7 +200,6 @@ class RAG:
         template = [{"role": "user", "content": prompt_str}]
         prompt = self.tokenizer.apply_chat_template(template, tokenize=False, add_generation_prompt=True)  # type: ignore
         tokens = self.tokenizer(prompt, return_tensors="pt").to("cuda")  # type: ignore
-
 
         return_tokens = return_tokens or self.max_new_tokens_summary
 
@@ -198,7 +212,7 @@ class RAG:
             pad_token_id=self.tokenizer.eos_token_id,  # just to get rid of a warning msg # type: ignore
         )
         app_logger.debug("Done!")
-    
+
         output_text = self.tokenizer.decode(output_tokens[0])
 
         if format_output:
@@ -208,7 +222,7 @@ class RAG:
 
     def topic_model_context(self) -> dict[str, float]:
         """Topic models the ranked context"""
-        lda = Lda(self.ranked_context[:self.articles_per_context])
+        lda = Lda(self.ranked_context[: self.articles_per_context])
         key_topics = lda.get_aggregate_topic_frequencies()
 
         return key_topics
@@ -216,13 +230,16 @@ class RAG:
     def _sanitize_events(self, event_results: str) -> str:
         """Formats event summary so it is valid json"""
         app_logger.debug("Sanitizing Events...")
-        
+
         with open("raw_event_results.txt", "w+") as f:
             f.write(event_results)
 
-        event_pattern = re.compile(r'\{[^{}]*"start_date"[^{}]*\{[^{}]*"year"[^{}]*\}[^{}]*"text"[^{}]*\{[^{}]*"headline"[^{}]*"text"[^{}]*\}[^{}]*\}', re.DOTALL)
+        event_pattern = re.compile(
+            r'\{[^{}]*"start_date"[^{}]*\{[^{}]*"year"[^{}]*\}[^{}]*"text"[^{}]*\{[^{}]*"headline"[^{}]*"text"[^{}]*\}[^{}]*\}',
+            re.DOTALL,
+        )
         event_matches = event_pattern.findall(event_results)
-        
+
         clean_events = []
         for event_str in event_matches:
             try:
@@ -231,7 +248,7 @@ class RAG:
                 clean_events.append(event)
             except:
                 continue
-        
+
         result = str({"events": clean_events})
         result = result.replace("'", '"')
         return result
@@ -239,7 +256,7 @@ class RAG:
     def _format_prompt(self, query_str: str, prompt_format: str) -> str:
         """Create prompt"""
         context_str = self._create_context_str(self.articles_per_context, True)
-        prompt_str = prompt_format.format(context=context_str, query_str = query_str)
+        prompt_str = prompt_format.format(context=context_str, query_str=query_str)
 
         return prompt_str
 
@@ -277,12 +294,12 @@ class RAG:
 
     def _event_format(self) -> str:
         """Format for event prompt"""
-                # {{
-                #     "title": "<event title>",
-                #     "description": "<brief description (1-2 concise sentences)>",
-                #     "date": "<date or date range>"
-                # }},
-                # ...
+        # {{
+        #     "title": "<event title>",
+        #     "description": "<brief description (1-2 concise sentences)>",
+        #     "date": "<date or date range>"
+        # }},
+        # ...
         return textwrap.dedent(
             """\
             You are a helpful assistant that extracts a list of key events from news article excerpts.
@@ -319,10 +336,9 @@ class RAG:
             Extracted Events:
         """
         )
-    
-    
-            # - for the start_date, year is required.
-            # - for the start_date, use 0 for <month> and/or <day> if those values are unknown
+
+        # - for the start_date, year is required.
+        # - for the start_date, use 0 for <month> and/or <day> if those values are unknown
 
     def _summary_format(self) -> str:
         """Format for summary prompt"""

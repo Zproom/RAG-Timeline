@@ -5,3 +5,4 @@ __pycache__/
 last_event.json
 raw_event_results.txt
 events_log.txt
+*.bat

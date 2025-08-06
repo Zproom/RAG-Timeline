@@ -21,3 +21,4 @@ streamlit-timeline
 scikit-learns
 matplotlib
 wordcloud
+feedparser

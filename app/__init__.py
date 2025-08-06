@@ -56,7 +56,7 @@ class App:
             "events": events,
             "event_prompt": event_prompt,
             "ranked_articles": ranked_articles,
-            "topics": topics
+            "topics": topics,
         }
 
         return payload

@@ -4,22 +4,24 @@ Module for storing news scrapers
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+import feedparser
 import newspaper
 import pandas as pd
 from gdeltdoc import Filters, GdeltDoc
 
-from app.constants import ArticleDict, GdeltDict
+import app.constants as const
 from app.exc import ScraperError
 from app.log import app_logger
 from gdelt_theme_set import GDELT_THEMES
 
 
 class GdeltSource(Enum):
-    """Storafe Enum for source links in Gdelt"""
+    """Storage Enum for source links in Gdelt"""
 
     # CBC = "cbc.ca"                # wasn't working for some reason
     CNN = "cnn.com"
@@ -28,7 +30,13 @@ class GdeltSource(Enum):
     # Wired = "wired.com"           # wasn't working for some reason
     # Reuters = "reuters.com"       # wasn't working for some reason
     NyTimes = "nytimes.com"
-    Guardian = "theguardian.com"
+    # Guardian = "theguardian.com"
+    # ESPN = "espn.com"
+    SkySports = "skysports.com"
+    # NPR = "npr.org"
+    # WashingtonPost = "washingtonpost.com"
+    # SkyNews = "news.sky.com"
+    Independent = "independent.co.uk"
 
 
 def format_date(date: datetime) -> str:
@@ -41,15 +49,32 @@ def format_text(text: str) -> str:
     return text.replace("\n", "").strip()
 
 
+class _Scraper(ABC):
+
+    def __init__(self) -> None:
+        """Parent class for scrapers"""
+        self.results: list[const.ArticleDict] = []
+
+    def clear_results(self):
+        """Method to clear the results from the scraper"""
+        app_logger.debug("Clearing results...")
+        self.results = []
+
+    @abstractmethod
+    def scrape(self, *args, **kwargs):
+        """Method for populating results"""
+        raise NotImplementedError()
+
+
 class ArticleFetcher:
     """Container class that wraps the newspaper4k module"""
 
     @classmethod
-    def fecth_articles(cls, urls: list[str] | str) -> list[ArticleDict]:
+    def fecth_articles(cls, urls: list[str] | str) -> list[const.ArticleDict]:
         """Queries article urls and extracts text and metadata"""
         urls = urls if isinstance(urls, list) else [urls]
 
-        results: list[ArticleDict] = []
+        results: list[const.ArticleDict] = []
 
         # track existing titles as it can be used to filter
         # articles already captured (but existing under
@@ -80,10 +105,10 @@ class ArticleFetcher:
         return results
 
     @classmethod
-    def _article_to_dict(cls, article: newspaper.Article) -> ArticleDict:
+    def _article_to_dict(cls, article: newspaper.Article) -> const.ArticleDict:
         """Convert the Article object into a friendly dict"""
 
-        new_dict: ArticleDict = {
+        new_dict: const.ArticleDict = {
             "text": format_text(article.text),
             "title": article.title,
             "authors": article.authors,
@@ -95,26 +120,67 @@ class ArticleFetcher:
         return new_dict
 
 
-class GdeltScrapper:
+class RssScraper(_Scraper):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def scrape(self, source: str, feed_url: str):
+        """Scrapes provided feed_url for articles"""
+        app_logger.debug(f"Scraping: {feed_url}...")
+        rss_list = self._get_rss_articles(source, feed_url)
+
+        urls = [rss["url"] for rss in rss_list]
+        articles = ArticleFetcher.fecth_articles(urls)
+
+        app_logger.debug(
+            f"Scaping complete. {len(articles)} articles remain after filtering"
+        )
+
+        self.results = articles
+
+    def _get_rss_articles(self, source: str, feed_url: str) -> list[const.RssDict]:
+        """extracts a list of Rss_dicts from feed"""
+        feed = feedparser.parse(feed_url)
+
+        articles: list[const.RssDict] = []
+        for entry in feed.entries:
+            url: str = entry.get("link", "")  # type: ignore
+            title: str = entry.get("title", "")  # type: ignore
+
+            if url == "":
+                # require a url to access links
+                app_logger.debug(f"ignoring {title} as url could not be found")
+                continue
+
+            new_dict: const.RssDict = {
+                "source": source,
+                "url": url,
+                "title": title,
+                "domain": feed_url,
+            }
+
+            articles.append(new_dict)
+
+        return articles
+
+
+class GdeltScrapper(_Scraper):
 
     GdeltSource = GdeltSource
 
     def __init__(self) -> None:
         """Class for managing scrapping GDelt and adding articles to the database"""
-        self.results: list[ArticleDict] = []
-
-    def clear_results(self):
-        """Method to clear the results from the scraper"""
-        self.results = []
+        super().__init__()
 
     def scrape(
         self,
         keywords: str | None = None,
         theme: str | None = None,
         sources: list[GdeltSource] | None = None,
-        start_date: datetime = datetime.now().date() - timedelta(days=7),
-        end_date: datetime = datetime.now().date(),
-        num_records: int = 5,
+        start_date: datetime = datetime.now().date() - timedelta(days=30),  # type: ignore / cannot access _Date so this kinda works
+        end_date: datetime = datetime.now().date(),  # type: ignore / cannot access _Date so this kinda works
+        num_records: int = 30,
     ):
         """Scrapes gdelt for the specified inputs"""
         app_logger.debug("Attempting to scrape Gdelt...")
@@ -150,7 +216,7 @@ class GdeltScrapper:
 
         self.results = articles
 
-    def _search(self, gdelt_filters: Filters) -> list[GdeltDict]:
+    def _search(self, gdelt_filters: Filters) -> list[const.GdeltDict]:
         """Searches Gdelt for articles with specified filters"""
         app_logger.debug("Searching Gdelt...")
         gdelt = GdeltDoc()
@@ -161,11 +227,11 @@ class GdeltScrapper:
 
         return formatted_results
 
-    def _gdelt_to_dict(self, articles: pd.DataFrame) -> list[GdeltDict]:
+    def _gdelt_to_dict(self, articles: pd.DataFrame) -> list[const.GdeltDict]:
         """Converts the output of gdelt.article_search from a dataframe into a easier to work with dict"""
-        results: list[GdeltDict] = []
-        for row in articles.iterrows():
-            new_dict: GdeltDict = {
+        results: list[const.GdeltDict] = []
+        for _, row in articles.iterrows():
+            new_dict: const.GdeltDict = {
                 "url": row["url"],  # type: ignore
                 "title": row["title"],  # type: ignore
                 "domain": row["domain"],  # type: ignore
@@ -249,6 +315,6 @@ class GdeltScrapper:
             config["theme"] = theme
 
         if keywords:
-            config["keywords"] = keywords
+            config["keyword"] = keywords
 
         return Filters(**config)

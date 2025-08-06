@@ -10,13 +10,26 @@ from uuid import uuid4
 import torch
 from qdrant_client import QdrantClient
 from qdrant_client.http.models.models import QueryResponse
-from qdrant_client.models import (Distance, FieldCondition, Filter, MatchValue,
-                                  PointStruct, VectorParams)
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 from sentence_transformers import SentenceTransformer
 from spacy.lang.en import English
 
-from app.constants import (COLLECTION_NAME, QDRANT_PORT, SENTENCES_PER_CHUNK,
-                           VECTOR_LENGTH, ArticleDict, ChunkDict, QueryResDict)
+from app.constants import (
+    COLLECTION_NAME,
+    QDRANT_PORT,
+    SENTENCES_PER_CHUNK,
+    VECTOR_LENGTH,
+    ArticleDict,
+    ChunkDict,
+    QueryResDict,
+)
 from app.exc import DbError
 from app.log import app_logger
 from app.utils import create_embedding_model, format_date
@@ -114,7 +127,7 @@ class Vector_DB:
         return True
 
     def add_articles(
-        self, article_list: list[ArticleDict], max_chunks_size: int | None
+        self, article_list: list[ArticleDict], max_chunks_size: int | None = None
     ):
         """Chunks and adds articles to the database"""
         app_logger.debug(f"Adding chunks to db, collection: {COLLECTION_NAME}")
@@ -127,7 +140,7 @@ class Vector_DB:
         # NOTE: all embeddings should be populated from _convert_articles_to_chunks
         points = [
             PointStruct(
-                id=str(uuid4),
+                id=str(uuid4()),
                 vector=chunk["embeddings"],  # type: ignore
                 payload={
                     "source": chunk["source"],
@@ -141,6 +154,10 @@ class Vector_DB:
             )
             for chunk in chunk_list
         ]
+
+        if len(points) == 0:
+            app_logger.warning("Number of articles is Zero. Exiting before upsert...")
+            return
 
         self.client.upsert(collection_name=COLLECTION_NAME, points=points)
 
